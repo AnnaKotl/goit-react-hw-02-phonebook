@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import { Form, Label, Input, Button, ErrorText } from './styles/ContactForm.styled';
 
 const validationSchema = Yup.object({
