@@ -1,54 +1,67 @@
-import React from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { Toaster } from 'react-hot-toast';
+import React, { useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { Form, Label, Input, Button, ErrorText } from './styles/ContactForm.styled';
+import * as Yup from 'yup';
 
-const validationSchema = Yup.object({
+const validationSchema = Yup.object().shape({
   name: Yup.string()
-    .matches(/^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/, 'Invalid name format')
+    .matches(
+      /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/,
+      'Name may contain only letters, apostrophe, dash and spaces'
+    )
     .required('Name is required'),
   number: Yup.string()
-    .matches(/^(\d{3}-\d{2}-\d{2}|\+?3?8?(0\d{9}))$/, 'Invalid number format')
+    .matches(/^(?:\+380|0)[0-9]{9}$/, 'Invalid number format (e.g. +380XXXXXXXXX or 0XXXXXXXXX)')
     .required('Number is required'),
 });
 
 export const ContactForm = ({ onSubmit }) => {
-  const formik = useFormik({
-    initialValues: {
-      name: '',
-      number: '',
-    },
-    validationSchema,
-    onSubmit: (values, { resetForm }) => {
-      onSubmit(values.name, values.number);
-      resetForm();
-    },
-  });
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    try {
+      await validationSchema.validate({ name, number }, { abortEarly: false });
+      onSubmit(name, number);
+      setName('');
+      setNumber('');
+      setErrors({});
+    } catch (error) {
+      const validationErrors = {};
+      error.inner.forEach(err => {
+        validationErrors[err.path] = err.message;
+      });
+      setErrors(validationErrors);
+      toast.error('Please fill in all fields correctly');
+    }
+  };
 
   return (
-    <Form onSubmit={formik.handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <Label>
         Name
         <Input
           type="text"
           name="name"
-          value={formik.values.name}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Enter your name"
         />
-        {formik.touched.name && formik.errors.name && <ErrorText>{formik.errors.name}</ErrorText>}
+        {errors.name && <ErrorText>{errors.name}</ErrorText>}
       </Label>
       <Label>
         Number
         <Input
-          type="tel"
+          type="text"
           name="number"
-          value={formik.values.number}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
+          value={number}
+          onChange={e => setNumber(e.target.value)}
+          placeholder="0XXXXXXXXX"
         />
-        {formik.touched.number && formik.errors.number && <ErrorText>{formik.errors.number}</ErrorText>}
+        {errors.number && <ErrorText>{errors.number}</ErrorText>}
       </Label>
       <Button type="submit">Add contact</Button>
       <Toaster position="top-right" />
